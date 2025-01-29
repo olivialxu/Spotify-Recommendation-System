@@ -4,95 +4,139 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 import numpy as np
 
-# Loading and previewing data
-df = pd.read_csv('~/Downloads/spotify-recommender/spotify.csv')
+# Load song database
+def load_data(filename):
 
-# Identifying relevant columns
-columns = ['Energy','Danceability','Liveness','Valence','Acousticness','Speechiness']
+    # Load data
+    df = pd.read_csv(filename)
 
-# Plotting distribution of each feature
-for feature in columns:
-    df[feature].plot(kind='hist', title=feature) 
+    # Identify relevant features
+    features = ['Energy','Danceability','Liveness','Valence','Acousticness','Speechiness']
+
+    # Normalize data
+    scaler = MinMaxScaler()
+    df[features] = scaler.fit_transform(df[features])
+
+    # Apply PCA with two components
+    pca = PCA(n_components=2)
+    pca_components = pca.fit_transform(df[features])
+
+    return df, features, pca_components, pca
+
+# Visualize song data
+def print_data(df, features, pca):
+
+    # Plot distributions of energy, danceability, liveness, valence, acousticness, speechiness
+    plt.figure(figsize=(12, 8))
+    # Loop over six features and create histograms to visualize distribution of each feature
+    for i, feature in enumerate(features, 1):
+        plt.subplot(2, 3, i)
+        df[feature].hist()
+        plt.title(feature)
+    plt.tight_layout()
     plt.show()
 
-# Scaling data
-scaler = MinMaxScaler()
-df[columns] = scaler.fit_transform(df[columns])
+    # Plot PCA coefficients
+    pca_coef = pd.DataFrame(pca.components_, columns=features, index=['PC1', 'PC2'])
+    plt.figure(figsize=(10, 6))
+    # Create graph to compare two PCA coefficients
+    pca_coef.T.plot(kind='bar')
+    plt.title('PCA Coefficients')
+    plt.tight_layout()
+    plt.show()
 
-# Extracting the relevant columns
-spotify_df = df[columns]
+    # Plot explained variance ratio of PCA components
+    plt.figure(figsize=(6, 4))
+    plt.bar(range(2), pca.explained_variance_ratio_)
+    plt.ylabel('Explained Variance Ratio')
+    plt.xlabel('Principal Components')
+    plt.tight_layout()
+    plt.show()
 
-# Applying PCA with two components
-pca = PCA(n_components=2)
-pca_components = pca.fit_transform(spotify_df)
-print(pca_components.shape)
-print(pca_components)
+# Recommend songs to user
+def recommend_songs(song_title, df, features, pca_components, n=5):
 
-pca_coef = pd.DataFrame(pca.components_, columns=columns, index=['PC1', 'PC2'])
+    song_title = song_title.lower()
 
-# Plotting the two PCA components
-pca_coef.T.plot(kind='bar', figsize=(8, 6), title='PCA Coefficients of Features')
-plt.xlabel('Features')
-plt.ylabel('Coefficient Value')
-plt.legend(title='Principal Components')
-plt.show()
-
-# transform 6 axes to 2 PCA axes --> how do you visualize the linear transformation from the 6 axes to the 2 PCA axes
-# and how do you 
-
-
-# TO-DO:
-# 1. Incorporate PCA into computing Euclidean distances
-# 2. Consider other song features
-# 3. Implement PCA from scratch
-#
-# OTHER:
-# 3. Perform k-means clustering
-
-# Recommend n songs given the title of a favorable song
-def recommend_song(song_title, top_n=5):
-    if song_title.lower() not in df['Title'].str.lower().values:
-        print(f"Song '{song_title}' not found.")
+    # Search for song title in database
+    if song_title not in df['Title'].str.lower().values:
+        print(f"'{song_title}' not in song database")
         return
-    
-    # Select row corresponding to song title
-    song_row = df[df['Title'].str.lower() == song_title.lower()]
 
-    query_index = song_row.index[0]
-    query_features = df.loc[query_index, columns].values
+    for index, row in df.iterrows():
+        if row['Title'].lower() == song_title:
+            query_index = index
+            break
 
-    # Calculate distance between songs in database and queried song
+    # Extract PCA coefficients of queried song
+    query_pca = pca_components[query_index]
+
+    # Create list of distances of each song in database (excluding queried song)
     distances = []
-    for i, song in df.iterrows():
-        if i == query_index:
-            continue
+    for index, row in df.iterrows():
+        if index != query_index:
+            song_pca = pca_components[index]
+            dist = np.linalg.norm(song_pca - query_pca)
+            distances.append((index, dist))
+
+    # Sort distances
+    distances = sorted(distances, key=lambda x:x[1])
+
+    # Print song recommendations
+    print("Here are your recommendations:")
+    for i, (index, _) in enumerate(distances[:n], 1):
+        song = df.loc[index]
+        print(f"{song['Title']}, {song['Artist']}")
+
+# Print songs with highest and lowest PC1 and PC2 coefficients
+def find_top_pca_songs(df, features, pca_components, pca):
+
+    # songs with highest PCA 1 and 2 components
+    pca_coef = pd.DataFrame(pca.components_, columns=features, index=['PC1', 'PC2'])
+
+    # create a table with rows as indices of songs, two columns (PCA1), (PCA2)
+    song_pca = []
+    for index, row in df.iterrows():
+        song_pca.append((index, np.dot(df.loc[index, features], pca_coef.iloc[0]).item(), np.dot(df.loc[index, features], pca_coef.iloc[1]).item()))
     
-        song_features = song[columns].values
-        dist = np.linalg.norm(song_features - query_features)
-        distances.append((i, dist))
+    # PCA 1
+    song_pca = sorted(song_pca, key=lambda x:x[1])
+    print(f"The song with the lowest PC1 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC1 coefficient of {song_pca[0][1]:.4f}")
 
-    # Sort songs by closeness
-    distances = sorted(distances, key=lambda x: x[1])
-    top_songs = distances[:top_n] # (index of song, distance)
+    song_pca = sorted(song_pca, key=lambda x:x[1], reverse=True)
+    print(f"The song with the highest PC1 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC1 coefficient of {song_pca[0][1]:.4f}")
 
-    # Select top songs and sort by popularity
-    top_songs = df.loc[top_songs[0]].sort_values(by='Popularity', ascending=False)
+    # PCA 2
+    song_pca = sorted(song_pca, key=lambda x:x[2])
+    print(f"The song with the lowest PC2 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC2 coefficient of {song_pca[0][2]:.4f}")
 
-    # Print user's recommended songs 
-    print(f"\nBecause you like the song '{df.loc[query_index, 'Title']}' by {df.loc[query_index, 'Artist']}...")
-    print("We think you may also like the songs:")
-    for i, song_index in enumerate(top_songs, start=1):
-        song = df.loc[song_index]
-        print(f"{i}. '{song['Title']}' by {song['Artist']} (Popularity: {song['Popularity']})")
+    song_pca = sorted(song_pca, key=lambda x:x[2], reverse=True)
+    print(f"The song with the highest PC2 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC2 coefficient of {song_pca[0][2]:.4f}")
 
-# Main 
-while True:
-    status = input("\nEnter 'recommend' for song recommendations or 'exit' to exit: ").strip().lower()
-    if status == "recommend":
-        title = input("Enter the song name: ").strip()
-        recommend_song(title)
-    elif status == "exit":
-        print("Program successfully exited.")
-        break
-    else:
-        print("Invalid input.")
+# Main function
+def main():
+
+    # Load song database
+    df, features, pca_components, pca = load_data('spotify.csv')
+
+    find_top_pca_songs(df, features, pca_components, pca)
+
+    while True:
+        command = input("\nEnter 'song lookup', 'print data', or 'exit': ").strip().lower()
+
+        if command == 'song lookup':
+            title = input("what's your favorite song: ").strip()
+            recommend_songs(title, df, features, pca_components)
+
+        elif command == 'print data':
+            print_data(df, features, pca)
+
+        elif command == 'exit':
+            print("adios")
+            break
+
+        else:
+            print("try again?")
+
+if __name__ == "__main__":
+    main()
