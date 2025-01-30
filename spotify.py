@@ -1,3 +1,13 @@
+## ################################## ##
+##    Spotify Recommendation System   ##
+## ################################## ##
+#
+# 
+# Authors: Olivia Xu, Julia Xi, Roshen Nair
+# Date: January 29, 2025
+#
+#
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
@@ -48,7 +58,7 @@ def print_data(df, features, pca):
 
     # Plot distributions of features
     plt.figure(figsize=(12, 8))
-    # Loop over six features and create histograms to visualize distribution of each feature
+    # Iterate over six features and create histograms to visualize distribution of each feature
     for i, feature in enumerate(features, 1):
         plt.subplot(2, 3, i)
         df[feature].hist()
@@ -103,9 +113,9 @@ def recommend_songs(song_title, df, features, pca_components, n=5):
     # Extract PCA coefficients of query song
     query_pca = pca_components[query_index]
 
-    # Create list of distances between query song and each song in database
+    # Create list to store pairs (song index, distance between song and query song)
     distances = []
-    # Loop through songs in database
+    # Iterate through songs in database
     for index, row in df.iterrows():
         # Exclude the query song itself
         if index != query_index:
@@ -125,8 +135,8 @@ def recommend_songs(song_title, df, features, pca_components, n=5):
     # print("\n")
 
     # Print song recommendations
-    print("Based on your liked song, we recommend:")
-    # Loop through top n closest songs
+    print("\nBased on your liked song, we recommend:")
+    # Iterate through top n closest songs
     for i, (index, _) in enumerate(distances[:n], 1):
         # Extract row corresponding to current song
         song = df.loc[index]
@@ -147,31 +157,43 @@ def recommend_songs(song_title, df, features, pca_components, n=5):
 #        pca - PCA model fit to df
 def find_top_pca_songs(df, features, pca_components, pca):
 
-    # songs with highest PCA 1 and 2 components
+    # Create a dataframe containing PCA component coefficients for each feature
+    # Rows are principal components, columns are features
     pca_coef = pd.DataFrame(pca.components_, columns=features, index=['PC1', 'PC2'])
 
-    # create a table with rows as indices of songs, two columns (PCA1), (PCA2)
+    # Create a list to store tuples (song index, PC1, PC2)
     song_pca = []
+    # Iterate through each song in the dataset
     for index, row in df.iterrows():
-        song_pca.append((index, np.dot(df.loc[index, features], pca_coef.iloc[0]).item(), np.dot(df.loc[index, features], pca_coef.iloc[1]).item()))
+        # Compute the dot product of song features with PCA component coefficients
+        pc1_score = np.dot(df.loc[index, features], pca_coef.iloc[0]).item()
+        pc2_score = np.dot(df.loc[index, features], pca_coef.iloc[1]).item()
+        
+        # Append the computed PC1 and PC2 scores
+        song_pca.append((index, pc1_score, pc2_score))
     
-    # PCA 1
-    # Sort songs by                                  ;jflksdjflk;asdjfslkfasdf
-    song_pca = sorted(song_pca, key=lambda x:x[1])
+    # Sort the list based on PC1 values in ascending order
+    song_pca = sorted(song_pca, key=lambda x: x[1])
+    # Print the song with the lowest PC1 score
     print(f"The song with the lowest PC1 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC1 coefficient of {song_pca[0][1]:.4f}")
-
-    song_pca = sorted(song_pca, key=lambda x:x[1], reverse=True)
+    
+    # Sort the list based on PC1 values in descending order
+    song_pca = sorted(song_pca, key=lambda x: x[1], reverse=True)
+    # Print the song with the highest PC1 score
     print(f"The song with the highest PC1 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC1 coefficient of {song_pca[0][1]:.4f}")
-
-    # PCA 2
-    song_pca = sorted(song_pca, key=lambda x:x[2])
+    
+    # Sort the list based on PC2 values in ascending order
+    song_pca = sorted(song_pca, key=lambda x: x[2])
+    # Print the song with the lowest PC2 score
     print(f"The song with the lowest PC2 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC2 coefficient of {song_pca[0][2]:.4f}")
-
-    song_pca = sorted(song_pca, key=lambda x:x[2], reverse=True)
+    
+    # Sort the list based on PC2 values in descending order
+    song_pca = sorted(song_pca, key=lambda x: x[2], reverse=True)
+    # Print the song with the highest PC2 score
     print(f"The song with the highest PC2 is '{df.loc[song_pca[0][0]]['Title']}' by '{df.loc[song_pca[0][0]]['Artist']}' with a PC2 coefficient of {song_pca[0][2]:.4f}")
 
-# The main function prompts the user for a song and recommends songs
-# The user may also view data from the song database
+# The main function allows the user to ask for a song recommendation,
+# print data relating to the song database, or exit the program.
 def main():
 
     # Load song database
@@ -181,19 +203,24 @@ def main():
     # find_top_pca_songs(df, features, pca_components, pca)
 
     while True:
+        # Prompt user for a command
         command = input("\nEnter 'song lookup', 'print data', or 'exit': ").strip().lower()
 
+        # Ask user for an input song and provide recommendations
         if command == 'song lookup':
             title = input("what's your favorite song: ").strip()
             recommend_songs(title, df, features, pca_components)
 
+        # Print dataset graphs
         elif command == 'print data':
             print_data(df, features, pca)
 
+        # Exit program
         elif command == 'exit':
             print("adios")
             break
 
+        # Manage invalid input
         else:
             print("try again?")
 
