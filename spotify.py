@@ -20,7 +20,6 @@
 # the song dataset, or exit the program.
 # 
 # Dataset: www.kaggle.com/datasets/iamsumat/spotify-top-2000s-mega-dataset
-#
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -82,9 +81,9 @@ def print_data(df, features, pca):
 
     # Plot PCA coefficients
     pca_coef = pd.DataFrame(pca.components_, columns=features, index=['PC1', 'PC2'])
-    plt.figure(figsize=(10, 6))
-    pca_coef.T.plot(kind='bar', color=['seagreen','plum'])
-    plt.title('PCA Coefficients')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    pca_coef.T.plot(kind='bar', color=['seagreen', 'darkslategray'], ax=ax)
+    ax.set_title('PCA Coefficients')
     plt.tight_layout()
     plt.show()
 
