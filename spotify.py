@@ -149,13 +149,13 @@ def recommend_songs(song_title, df, features, pca_components, n=5):
     # print("\n")
 
     # Print song recommendations
-    print("\nBased on your liked song, we recommend:")
+    print(f"\nYou liked '{df.loc[query_index]['Title']}' by {df.loc[query_index]['Artist']}, so we recommend:")
     # Iterate through top n closest songs
     for i, (index, _) in enumerate(distances[:n], 1):
         # Extract row corresponding to current song
         song = df.loc[index]
         # Print title and artist of song
-        print(f"{song['Title']}, {song['Artist']}")
+        print(f"'{song['Title']}', {song['Artist']}")
         # print("FEATURES")
         # print(song[features].transpose())
         # print("\n")
