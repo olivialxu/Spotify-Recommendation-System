@@ -2,10 +2,24 @@
 ##    Spotify Recommendation System   ##
 ## ################################## ##
 #
-# 
 # Authors: Olivia Xu, Julia Xi, Roshen Nair
 # Date: January 29, 2025
 #
+# This file simulates a song recommendation system, providing the user with
+# song recommendations using the dataset of Spotify's top 2000 songs as of
+# 2019. The dataset contains a list of the songs, as well as features of each
+# song such as "energy" and "acousticness" which we use to determine song
+# similarity. We accessed this dataset from Kaggle (linked below). We extract
+# what we deemed the six most relevant features: energy, danceability,
+# liveness, valence, acousticness, and speechiness. We then apply principal
+# component analysis to reduce our dataset to two dimensions, then use
+# a Euclidean metric to compute distance between songs.
+# 
+# In the main function, the user is prompted for a command; the user can
+# choose to receive song recommendations, view graph displaying data about
+# the song dataset, or exit the program.
+# 
+# Dataset: www.kaggle.com/datasets/iamsumat/spotify-top-2000s-mega-dataset
 #
 
 import pandas as pd
@@ -61,7 +75,7 @@ def print_data(df, features, pca):
     # Iterate over six features and create histograms to visualize distribution of each feature
     for i, feature in enumerate(features, 1):
         plt.subplot(2, 3, i)
-        df[feature].hist()
+        df[feature].hist(color='seagreen')
         plt.title(feature)
     plt.tight_layout()
     plt.show()
@@ -69,17 +83,18 @@ def print_data(df, features, pca):
     # Plot PCA coefficients
     pca_coef = pd.DataFrame(pca.components_, columns=features, index=['PC1', 'PC2'])
     plt.figure(figsize=(10, 6))
-    pca_coef.T.plot(kind='bar')
+    pca_coef.T.plot(kind='bar', color=['seagreen','plum'])
     plt.title('PCA Coefficients')
     plt.tight_layout()
     plt.show()
 
     # Plot explained variance ratio of principal components
+    explained_variance_ratio = pca.explained_variance_ratio_
     plt.figure(figsize=(6, 4))
-    plt.bar(range(2), pca.explained_variance_ratio_)
+    plt.bar(range(len(explained_variance_ratio)), explained_variance_ratio, color='seagreen')
     plt.ylabel('Explained Variance Ratio')
     plt.xlabel('Principal Components')
-    plt.xticks([1, 2]);
+    plt.xticks(range(len(explained_variance_ratio)), [f'PC{i+1}' for i in range(len(explained_variance_ratio))])
     plt.tight_layout()
     plt.show()
 
@@ -208,7 +223,7 @@ def main():
 
         # Ask user for an input song and provide recommendations
         if command == 'song lookup':
-            title = input("what's your favorite song: ").strip()
+            title = input("What's your favorite song? ").strip()
             recommend_songs(title, df, features, pca_components)
 
         # Print dataset graphs
@@ -217,12 +232,12 @@ def main():
 
         # Exit program
         elif command == 'exit':
-            print("adios")
+            print("Program exited.")
             break
 
         # Manage invalid input
         else:
-            print("try again?")
+            print("Invalid input. Please try again.")
 
 if __name__ == "__main__":
     main()
