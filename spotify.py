@@ -2,8 +2,8 @@
 ##    Spotify Recommendation System   ##
 ## ################################## ##
 #
-# Authors: Olivia Xu, Julia Xi, Roshen Nair
-# Date: January 29, 2025
+# Authors: Olivia Xu, Julia Xi, Roshen Nair, Malti John
+# Date: January 31, 2025
 #
 # This file simulates a song recommendation system, providing the user with
 # song recommendations using the dataset of Spotify's top 2000 songs as of
